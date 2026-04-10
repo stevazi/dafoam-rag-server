@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "dafoam-rag": {
+      "type": "sse",
+      "url": "http://127.0.0.1:29310/sse"
+    }
+  }
+}

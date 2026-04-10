@@ -1,0 +1,58 @@
+# Core LLM / inference
+ollama>=0.3.0
+
+# LlamaIndex orchestration
+llama-index>=0.10.0
+llama-index-llms-ollama>=0.3.0
+llama-index-embeddings-huggingface>=0.3.0
+llama-index-vector-stores-chroma>=0.2.0
+
+# Vector DB
+chromadb>=0.5.0
+
+# Oracle DB — thin mode, no Instant Client required
+oracledb>=2.0.0
+
+# Embeddings
+# NOTE: PyTorch with CUDA is in requirements-cuda.txt
+# Install it first for GPU-accelerated embeddings:
+#   pip install -r requirements-cuda.txt
+sentence-transformers>=3.0.0
+# Jina embeddings-v2 uses find_pruneable_heads_and_indices removed in transformers 5.x
+transformers>=4.36.0,<5.0.0
+
+# MCP Python bridge
+mcp>=1.0.0
+llama-index-tools-mcp>=0.1.0
+
+# HTTP / async
+httpx>=0.27.0
+aiohttp>=3.9.0
+
+# Configuration
+python-dotenv>=1.0.0
+pydantic>=2.0.0
+pydantic-settings>=2.0.0
+
+# Git — read master/main branch without modifying working tree
+gitpython>=3.1.0
+
+# Jira REST client (for MCP server or future direct integration)
+jira>=3.8.0
+# Confluence REST client (optional — for live queries via REST)
+atlassian-python-api>=3.41.0
+
+# Document parsing
+pypdf>=4.0.0
+
+# Code parsing (AST chunking for Java/.NET)
+tree-sitter>=0.21.0
+
+# Utilities
+tqdm>=4.66.0
+rich>=13.0.0
+click>=8.1.0
+
+# Testing
+pytest>=8.0.0
+pytest-asyncio>=0.23.0

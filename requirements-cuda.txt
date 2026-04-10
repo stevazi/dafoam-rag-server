@@ -1,0 +1,7 @@
+# PyTorch with CUDA 12.4 support (RTX 500 Ada / CUDA 12.x)
+# Install AFTER requirements.txt:
+#   pip install -r requirements-cuda.txt
+#
+--extra-index-url https://download.pytorch.org/whl/cu124
+torch==2.6.0+cu124
+torchvision==0.21.0+cu124

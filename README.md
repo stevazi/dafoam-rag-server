@@ -1,0 +1,217 @@
+# DAFoam RAG — MCP Server
+
+> A local Chroma RAG MCP server for the [DAFoam](https://github.com/mdolab/dafoam) codebase.
+> Indexes Python + C++ source, Sphinx documentation, and test cases.
+> Exposes three search tools over SSE for Copilot CLI and Continue.dev.
+
+---
+
+## Quick Start
+
+### 1. Prerequisites
+
+- **Python 3.11** — required for the CUDA torch wheel (`cp311` only). Do NOT use 3.12/3.14.
+- A local clone of DAFoam at `../dafoam` (or configure `DAFOAM_REPO_PATH`)
+
+```powershell
+# Install uv (fast Python version manager) if not already installed
+irm https://astral.sh/uv/install.ps1 | iex
+uv python install 3.11
+
+# Create venv with Python 3.11
+$py = "$env:APPDATA\uv\python\cpython-3.11.14-windows-x86_64-none\python.exe"
+& $py -m venv .venv
+.venv\Scripts\Activate.ps1
+
+# Install core dependencies
+pip install -r requirements.txt
+
+# Install GPU-accelerated PyTorch (CUDA 12.4)
+# If pip can reach download.pytorch.org directly:
+pip install -r requirements-cuda.txt
+
+# If behind a corporate proxy (Zscaler) — download via PowerShell then install locally:
+# Invoke-WebRequest "https://download.pytorch.org/whl/cu124/torch-2.6.0%2Bcu124-cp311-cp311-win_amd64.whl" -OutFile .\data\torch-2.6.0+cu124-cp311-cp311-win_amd64.whl
+# pip install .\data\torch-2.6.0+cu124-cp311-cp311-win_amd64.whl
+
+# Configure
+copy .env.example .env
+```
+
+### 2. Build indexes
+
+```powershell
+# Index DAFoam Python + C++ source
+python scripts\index_code.py
+
+# Index documentation (clones DAFoam/DAFoam.github.io Sphinx source)
+python scripts\index_docs.py
+
+# Index test cases + OpenFOAM case configs
+python scripts\index_tests.py
+```
+
+### 3. Start the MCP server
+
+```powershell
+.\scripts\Start-ChromaServer.ps1
+```
+
+Output:
+```
+dafoam-rag SSE server started (PID 12345).
+  SSE URL:  http://127.0.0.1:29310/sse
+```
+
+### 4. Add to Copilot CLI
+
+Merge this into `~/.copilot/mcp-config.json`:
+
+```json
+{
+  "mcpServers": {
+    "dafoam-rag": {
+      "type": "sse",
+      "url": "http://127.0.0.1:29310/sse"
+    }
+  }
+}
+```
+
+See `config/mcp-config-entry.json` for the snippet.
+
+### 5. Verify
+
+```powershell
+.\scripts\Start-ChromaServer.ps1 -Status
+python scripts\test_e2e.py
+```
+
+---
+
+## Architecture
+
+```
+Copilot CLI / Continue.dev
+        │  SSE  http://127.0.0.1:29310/sse
+        ▼
+  chroma_sse_server.py   (MCP SSE server, port 29310)
+        │
+  ┌─────┼──────────┐
+  │     │          │
+code  docs       tests
+Chroma × 3   (persistent, on-disk)
+        │
+  jinaai/jina-embeddings-v2-base-code
+  (137 MB, 8192-token context, CUDA-accelerated)
+```
+
+| Layer | Technology | Purpose |
+|-------|-----------|---------|
+| **MCP transport** | SSE (Starlette + uvicorn) | Persistent server, single model load |
+| **Embeddings** | `jina-embeddings-v2-base-code` | Code + text, 8192-token context |
+| **Vector DBs** | Chroma (3 × persistent) | Code, docs, tests |
+| **MCP framework** | `mcp` Python SDK | Tool registration + SSE transport |
+
+---
+
+## MCP Tools
+
+| Tool | Collection | Use when… |
+|------|-----------|-----------|
+| `search_codebase` | `dafoam_code` | Looking up DAFoam classes, methods, adjoint C++ |
+| `search_docs` | `dafoam_docs` | Installation, tutorials, API reference, solver docs |
+| `search_tests` | `dafoam_tests` | DAOPTION examples, solver case setups, reference configurations |
+
+---
+
+## Indexing
+
+```powershell
+# Source code (Python + C++)
+python scripts\index_code.py                   # default: ../dafoam main branch
+python scripts\index_code.py --repo C:\path\to\dafoam  # custom path
+python scripts\index_code.py --rebuild         # wipe and re-index
+python scripts\index_code.py --cpu             # force CPU
+
+# Documentation
+python scripts\index_docs.py                   # clone DAFoam/DAFoam.github.io + index RST/MD
+python scripts\index_docs.py --source scrape   # scrape dafoam.github.io HTML instead
+python scripts\index_docs.py --rebuild
+
+# Test cases + OpenFOAM configs
+python scripts\index_tests.py
+python scripts\index_tests.py --rebuild
+```
+
+### Docs repo
+
+Documentation is sourced from [`DAFoam/DAFoam.github.io`](https://github.com/DAFoam/DAFoam.github.io) —
+the Sphinx source for https://dafoam.github.io/. The script clones it to `./data/docs_repo/`
+and re-pulls on subsequent runs.
+
+---
+
+## Embedding Model
+
+**Primary:** `jinaai/jina-embeddings-v2-base-code` (Apache 2.0, 137 MB)
+- Trained on Python, C++, and natural language pairs
+- 8 192-token context — handles long adjoint C++ files without truncation
+- Best-in-class code retrieval on CodeSearchNet benchmarks
+- Downloaded automatically on first use
+
+**Fallback:** `intfloat/multilingual-e5-large` (already cached from IDG_LLM)
+
+Control via `.env`:
+```
+EMBED_MODEL=jinaai/jina-embeddings-v2-base-code
+EMBED_FALLBACK_MODEL=intfloat/multilingual-e5-large
+EMBED_AUTO_DOWNLOAD_ON_MISS=true
+```
+
+---
+
+## Server Management
+
+```powershell
+# Start
+.\scripts\Start-ChromaServer.ps1
+
+# Check status
+.\scripts\Start-ChromaServer.ps1 -Status
+
+# Stop
+.\scripts\Start-ChromaServer.ps1 -Stop
+
+# Custom port
+.\scripts\Start-ChromaServer.ps1 -Port 29311
+
+# View logs
+Get-Content .\data\chroma_server_err.log -Tail 50
+```
+
+---
+
+## Project Structure
+
+```
+dafoam-rag/
+├── config/
+│   ├── settings.py              ← Pydantic settings (.env)
+│   └── mcp-config-entry.json   ← Snippet for ~/.copilot/mcp-config.json
+├── src/
+│   ├── rag/
+│   │   └── embeddings.py        ← CUDA-aware embedding factory
+│   └── mcp/
+│       └── chroma_sse_server.py ← SSE MCP server (port 29310)
+├── scripts/
+│   ├── index_code.py            ← Index DAFoam Python + C++
+│   ├── index_docs.py            ← Index DAFoam docs (RST/MD or web scrape)
+│   ├── index_tests.py           ← Index test cases + OF configs
+│   ├── test_e2e.py              ← Smoke test
+│   └── Start-ChromaServer.ps1  ← Start/stop/status
+├── data/                        ← Chroma DBs + server logs (gitignored)
+├── .env.example
+├── requirements.txt
+└── requirements-cuda.txt
+```
