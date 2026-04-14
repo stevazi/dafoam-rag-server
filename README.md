@@ -1,8 +1,8 @@
 # DAFoam RAG — MCP Server
 
 > A local Chroma RAG MCP server for the [DAFoam](https://github.com/mdolab/dafoam) codebase.
-> Indexes Python + C++ source, Sphinx documentation, and test cases.
-> Exposes three search tools over SSE for Copilot CLI and Continue.dev.
+> Indexes Python + C++ source, Sphinx documentation, test cases, and ecosystem tutorial repositories.
+> Exposes four search tools over SSE for Copilot CLI and Continue.dev.
 
 ---
 
@@ -49,6 +49,9 @@ python scripts\index_docs.py
 
 # Index test cases + OpenFOAM case configs
 python scripts\index_tests.py
+
+# Index tutorials + prerequisite ecosystem repositories (priority 1 by default)
+python scripts\index_tutorials.py --max-priority 1
 ```
 
 ### 3. Start the MCP server
@@ -97,20 +100,20 @@ Copilot CLI / Continue.dev
         ▼
   chroma_sse_server.py   (MCP SSE server, port 29310)
         │
-  ┌─────┼──────────┐
-  │     │          │
-code  docs       tests
-Chroma × 3   (persistent, on-disk)
+  ┌─────┼──────────┬────────────┐
+  │     │          │            │
+code  docs       tests     tutorials
+Chroma × 4   (persistent, on-disk)
         │
-  jinaai/jina-embeddings-v2-base-code
-  (137 MB, 8192-token context, CUDA-accelerated)
+  Snowflake/snowflake-arctic-embed-l-v2.0
+  (local-first default with bge-m3 fallback)
 ```
 
 | Layer | Technology | Purpose |
 |-------|-----------|---------|
 | **MCP transport** | SSE (Starlette + uvicorn) | Persistent server, single model load |
-| **Embeddings** | `jina-embeddings-v2-base-code` | Code + text, 8192-token context |
-| **Vector DBs** | Chroma (3 × persistent) | Code, docs, tests |
+| **Embeddings** | `snowflake-arctic-embed-l-v2.0` (+ `bge-m3` fallback) | Local retrieval embeddings |
+| **Vector DBs** | Chroma (4 × persistent) | Code, docs, tests, tutorials |
 | **MCP framework** | `mcp` Python SDK | Tool registration + SSE transport |
 
 ---
@@ -122,6 +125,7 @@ Chroma × 3   (persistent, on-disk)
 | `search_codebase` | `dafoam_code` | Looking up DAFoam classes, methods, adjoint C++ |
 | `search_docs` | `dafoam_docs` | Installation, tutorials, API reference, solver docs |
 | `search_tests` | `dafoam_tests` | DAOPTION examples, solver case setups, reference configurations |
+| `search_tutorials` | `dafoam_tutorials` | DAFoam tutorial repos and prerequisite ecosystem sources |
 
 ---
 
@@ -142,6 +146,11 @@ python scripts\index_docs.py --rebuild
 # Test cases + OpenFOAM configs
 python scripts\index_tests.py
 python scripts\index_tests.py --rebuild
+
+# Ecosystem tutorials and prerequisite repositories
+python scripts\index_tutorials.py --max-priority 1
+python scripts\index_tutorials.py --max-priority 3 --include-prerequisites
+python scripts\index_tutorials.py --rebuild
 ```
 
 ### Docs repo
@@ -154,18 +163,17 @@ and re-pulls on subsequent runs.
 
 ## Embedding Model
 
-**Primary:** `jinaai/jina-embeddings-v2-base-code` (Apache 2.0, 137 MB)
-- Trained on Python, C++, and natural language pairs
-- 8 192-token context — handles long adjoint C++ files without truncation
-- Best-in-class code retrieval on CodeSearchNet benchmarks
-- Downloaded automatically on first use
+**Primary:** `Snowflake/snowflake-arctic-embed-l-v2.0`
+- Local-first multilingual retrieval model
+- 8 192-token context
+- Balanced quality for code + docs queries
 
-**Fallback:** `intfloat/multilingual-e5-large` (already cached from IDG_LLM)
+**Fallback:** `BAAI/bge-m3`
 
 Control via `.env`:
 ```
-EMBED_MODEL=jinaai/jina-embeddings-v2-base-code
-EMBED_FALLBACK_MODEL=intfloat/multilingual-e5-large
+EMBED_MODEL=Snowflake/snowflake-arctic-embed-l-v2.0
+EMBED_FALLBACK_MODEL=BAAI/bge-m3
 EMBED_AUTO_DOWNLOAD_ON_MISS=true
 ```
 
@@ -198,6 +206,7 @@ Get-Content .\data\chroma_server_err.log -Tail 50
 dafoam-rag/
 ├── config/
 │   ├── settings.py              ← Pydantic settings (.env)
+│   ├── repository_sources.json  ← External repo sources for tutorials index
 │   └── mcp-config-entry.json   ← Snippet for ~/.copilot/mcp-config.json
 ├── src/
 │   ├── rag/
@@ -208,6 +217,9 @@ dafoam-rag/
 │   ├── index_code.py            ← Index DAFoam Python + C++
 │   ├── index_docs.py            ← Index DAFoam docs (RST/MD or web scrape)
 │   ├── index_tests.py           ← Index test cases + OF configs
+│   ├── index_tutorials.py       ← Index ecosystem tutorial/prerequisite repos
+│   ├── benchmark_embeddings.py  ← Retrieval smoke benchmark against live collections
+│   ├── bakeoff_local_embeddings.py ← Local model quality comparison script
 │   ├── test_e2e.py              ← Smoke test
 │   └── Start-ChromaServer.ps1  ← Start/stop/status
 ├── data/                        ← Chroma DBs + server logs (gitignored)

@@ -1,0 +1,146 @@
+{
+  "version": 1,
+  "description": "Repositories to expand retrieval coverage beyond the core DAFoam repo.",
+  "sources": [
+    {
+      "name": "DAFoam/tutorials",
+      "url": "https://github.com/DAFoam/tutorials.git",
+      "branch": "main",
+      "category": "tutorials",
+      "priority": 1
+    },
+    {
+      "name": "DAFoam/reg_test_files",
+      "url": "https://github.com/DAFoam/reg_test_files.git",
+      "branch": "main",
+      "category": "tests",
+      "priority": 1
+    },
+    {
+      "name": "DAFoam/user_guide_files",
+      "url": "https://github.com/DAFoam/user_guide_files.git",
+      "branch": "main",
+      "category": "docs",
+      "priority": 1
+    },
+    {
+      "name": "DAFoam/validations",
+      "url": "https://github.com/DAFoam/validations.git",
+      "branch": "main",
+      "category": "validation",
+      "priority": 2
+    },
+    {
+      "name": "DAFoam/verifications",
+      "url": "https://github.com/DAFoam/verifications.git",
+      "branch": "main",
+      "category": "validation",
+      "priority": 2
+    },
+    {
+      "name": "DAFoam/workshops",
+      "url": "https://github.com/DAFoam/workshops.git",
+      "branch": "main",
+      "category": "tutorials",
+      "priority": 2
+    },
+    {
+      "name": "DAFoam/OpenFOAM-v1812-AD",
+      "url": "https://github.com/DAFoam/OpenFOAM-v1812-AD.git",
+      "branch": "main",
+      "category": "prerequisite",
+      "priority": 2
+    },
+    {
+      "name": "DAFoam/Hisa4DAFoam",
+      "url": "https://github.com/DAFoam/Hisa4DAFoam.git",
+      "branch": "main",
+      "category": "prerequisite",
+      "priority": 2
+    },
+    {
+      "name": "mdolab/baseclasses",
+      "url": "https://github.com/mdolab/baseclasses.git",
+      "branch": "master",
+      "category": "prerequisite",
+      "priority": 3
+    },
+    {
+      "name": "mdolab/pyspline",
+      "url": "https://github.com/mdolab/pyspline.git",
+      "branch": "master",
+      "category": "prerequisite",
+      "priority": 3
+    },
+    {
+      "name": "mdolab/pygeo",
+      "url": "https://github.com/mdolab/pygeo.git",
+      "branch": "master",
+      "category": "prerequisite",
+      "priority": 3
+    },
+    {
+      "name": "mdolab/multipoint",
+      "url": "https://github.com/mdolab/multipoint.git",
+      "branch": "master",
+      "category": "prerequisite",
+      "priority": 3
+    },
+    {
+      "name": "mdolab/pyhyp",
+      "url": "https://github.com/mdolab/pyhyp.git",
+      "branch": "master",
+      "category": "prerequisite",
+      "priority": 3
+    },
+    {
+      "name": "mdolab/cgnsutilities",
+      "url": "https://github.com/mdolab/cgnsutilities.git",
+      "branch": "master",
+      "category": "prerequisite",
+      "priority": 3
+    },
+    {
+      "name": "mdolab/idwarp",
+      "url": "https://github.com/mdolab/idwarp.git",
+      "branch": "master",
+      "category": "prerequisite",
+      "priority": 3
+    },
+    {
+      "name": "mdolab/pyoptsparse",
+      "url": "https://github.com/mdolab/pyoptsparse.git",
+      "branch": "master",
+      "category": "prerequisite",
+      "priority": 3
+    },
+    {
+      "name": "mdolab/pyofm",
+      "url": "https://github.com/mdolab/pyofm.git",
+      "branch": "master",
+      "category": "prerequisite",
+      "priority": 3
+    },
+    {
+      "name": "OpenMDAO/mphys",
+      "url": "https://github.com/OpenMDAO/mphys.git",
+      "branch": "main",
+      "category": "prerequisite",
+      "priority": 3
+    },
+    {
+      "name": "smdogroup/funtofem",
+      "url": "https://github.com/smdogroup/funtofem.git",
+      "branch": "master",
+      "category": "prerequisite",
+      "priority": 3
+    },
+    {
+      "name": "smdogroup/tacs",
+      "url": "https://github.com/smdogroup/tacs.git",
+      "branch": "master",
+      "category": "prerequisite",
+      "priority": 3
+    }
+  ]
+}

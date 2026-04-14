@@ -26,6 +26,7 @@ from src.rag.embeddings import get_embed_model
 
 logging.basicConfig(level=settings.log_level)
 log = logging.getLogger(__name__)
+PROJECT_ROOT = Path(__file__).parent.parent.resolve()
 
 # File extensions to index
 CODE_EXTENSIONS = frozenset([
@@ -35,8 +36,6 @@ CODE_EXTENSIONS = frozenset([
     ".C", ".H", ".cpp", ".h", ".c",
     # Config / build
     ".yml", ".yaml", ".cfg", ".conf",
-    # Documentation in repo
-    ".md", ".rst",
 ])
 
 PREFERRED_BRANCHES = ("main", "master")
@@ -120,7 +119,8 @@ def main() -> None:
     log.info("Loading embedding model...")
     embed_model = get_embed_model(force_cpu=args.cpu)
 
-    db_path = str(Path(settings.chroma_code_dir))
+    db_cfg = Path(settings.chroma_code_dir)
+    db_path = str(db_cfg if db_cfg.is_absolute() else (PROJECT_ROOT / db_cfg).resolve())
     client = chromadb.PersistentClient(path=db_path)
 
     if args.rebuild:

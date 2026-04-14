@@ -1,16 +1,4 @@
-"""Embedding model factory — auto-selects CUDA > CPU.
-
-Primary model: jinaai/jina-embeddings-v2-base-code
-  - Trained on Python, C++, and natural language pairs
-  - 8192-token context window (handles long C++ files)
-  - 137 MB — smaller and faster than multilingual-e5-large
-
-Fallback: intfloat/multilingual-e5-large (already cached from IDG_LLM)
-
-Startup behaviour: offline-first (HF_HUB_OFFLINE=1). If the primary model
-is not in the local cache and EMBED_AUTO_DOWNLOAD_ON_MISS is true, it
-retries once online before falling back to the secondary model.
-"""
+"""Embedding utilities for local model loading and query formatting."""
 import logging
 import os
 
@@ -23,6 +11,19 @@ from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 log = logging.getLogger(__name__)
 
 
+def format_query_for_model(query: str, model_name: str) -> str:
+    """Format retrieval query text according to model-specific conventions."""
+    name = model_name.lower()
+
+    if "mxbai" in name:
+        return f"Represent this sentence for searching relevant passages: {query}"
+    if "e5" in name or "gte-" in name or "snowflake-arctic" in name:
+        return f"query: {query}"
+
+    # bge-m3 and jina-v3 generally work without explicit textual prefixes.
+    return query
+
+
 def get_embed_model(
     model_name: str | None = None,
     force_cpu: bool = False,
@@ -30,8 +31,7 @@ def get_embed_model(
 ) -> HuggingFaceEmbedding:
     """Return a HuggingFaceEmbedding using CUDA if available, else CPU.
 
-    Tries the primary model first; if offline and unavailable, tries the
-    fallback model (intfloat/multilingual-e5-large) before raising.
+    Tries the primary model first; if offline and unavailable, tries fallback.
     """
     from config.settings import settings
 

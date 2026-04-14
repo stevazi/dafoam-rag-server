@@ -32,9 +32,10 @@ from src.rag.embeddings import get_embed_model
 
 logging.basicConfig(level=settings.log_level)
 log = logging.getLogger(__name__)
+PROJECT_ROOT = Path(__file__).parent.parent.resolve()
 
 DOCS_REPO_URL = "https://github.com/DAFoam/DAFoam.github.io.git"
-DOCS_REPO_DIR = Path("./data/docs_repo")
+DOCS_REPO_DIR = PROJECT_ROOT / "data" / "docs_repo"
 DOCS_BASE_URL = "https://dafoam.github.io/"
 DOC_EXTENSIONS = frozenset([".rst", ".md"])
 
@@ -172,7 +173,8 @@ def main() -> None:
     log.info("Loading embedding model...")
     embed_model = get_embed_model(force_cpu=args.cpu)
 
-    db_path = str(Path(settings.chroma_docs_dir))
+    db_cfg = Path(settings.chroma_docs_dir)
+    db_path = str(db_cfg if db_cfg.is_absolute() else (PROJECT_ROOT / db_cfg).resolve())
     client = chromadb.PersistentClient(path=db_path)
 
     if args.rebuild:

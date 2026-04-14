@@ -51,6 +51,8 @@ async def run_tests(sse_url: str) -> bool:
          "Docs index empty or tool failed"),
         ("search_tests",    "DASimpleFoam aerodynamic optimization case setup",
          "Tests index empty or tool failed"),
+        ("search_tutorials", "DAFoam tutorial repository examples",
+         "Tutorial index empty or tool failed (optional if tutorials not indexed yet)"),
     ]
 
     all_passed = True

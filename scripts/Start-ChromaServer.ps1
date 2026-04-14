@@ -17,6 +17,7 @@ param(
 
 $ProjectRoot = Split-Path -Parent $PSScriptRoot
 $PidFile     = Join-Path $ProjectRoot "data\chroma_server.pid"
+$PortFile    = Join-Path $ProjectRoot "data\chroma_server.port"
 $LogFile     = Join-Path $ProjectRoot "data\chroma_server.log"
 $ErrFile     = Join-Path $ProjectRoot "data\chroma_server_err.log"
 $ServerScript = Join-Path $ProjectRoot "src\mcp\chroma_sse_server.py"
@@ -38,6 +39,14 @@ function Get-StoredPid {
     return $null
 }
 
+function Get-StoredPort {
+    if (Test-Path $PortFile) {
+        $raw = (Get-Content $PortFile -Raw).Trim()
+        if ($raw -match '^\d+$') { return [int]$raw }
+    }
+    return $null
+}
+
 function Is-Running([int]$ProcessId) {
     try { $proc = Get-Process -Id $ProcessId -ErrorAction Stop; return $true }
     catch { return $false }
@@ -48,7 +57,8 @@ if ($Status) {
     $storedPid = Get-StoredPid
     if ($null -ne $storedPid -and (Is-Running $storedPid)) {
         Write-Host "dafoam-rag SSE server is RUNNING (PID $storedPid)" -ForegroundColor Green
-        $effectivePort = if ($Port -gt 0) { $Port } else { 29310 }
+        $storedPort = Get-StoredPort
+        $effectivePort = if ($Port -gt 0) { $Port } elseif ($null -ne $storedPort) { $storedPort } else { 29310 }
         Write-Host "  SSE URL: http://127.0.0.1:$effectivePort/sse"
     } else {
         Write-Host "dafoam-rag SSE server is NOT running." -ForegroundColor Yellow
@@ -62,6 +72,7 @@ if ($Stop) {
     if ($null -ne $storedPid -and (Is-Running $storedPid)) {
         Stop-Process -Id $storedPid -Force
         Remove-Item -Path $PidFile -ErrorAction SilentlyContinue
+        Remove-Item -Path $PortFile -ErrorAction SilentlyContinue
         Write-Host "dafoam-rag SSE server stopped (PID $storedPid)." -ForegroundColor Yellow
     } else {
         Write-Host "No running server found." -ForegroundColor Gray
@@ -91,6 +102,7 @@ $proc = Start-Process -FilePath $Python `
 
 $proc.Id | Set-Content -Path $PidFile
 $effectivePort = if ($Port -gt 0) { $Port } else { 29310 }
+$effectivePort | Set-Content -Path $PortFile
 
 Write-Host "dafoam-rag SSE server started (PID $($proc.Id))." -ForegroundColor Green
 Write-Host "  SSE URL:  http://127.0.0.1:$effectivePort/sse"
