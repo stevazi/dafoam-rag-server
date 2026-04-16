@@ -2,7 +2,7 @@
 
 > A local Chroma RAG MCP server for the [DAFoam](https://github.com/mdolab/dafoam) codebase.
 > Indexes Python + C++ source, Sphinx documentation, test cases, and ecosystem tutorial repositories.
-> Exposes four search tools over SSE for Copilot CLI and Continue.dev.
+> Exposes four search tools over SSE for Copilot CLI, claude code, and so on.
 
 ---
 
@@ -29,10 +29,6 @@ pip install -r requirements.txt
 # Install GPU-accelerated PyTorch (CUDA 12.4)
 # If pip can reach download.pytorch.org directly:
 pip install -r requirements-cuda.txt
-
-# If behind a corporate proxy (Zscaler) — download via PowerShell then install locally:
-# Invoke-WebRequest "https://download.pytorch.org/whl/cu124/torch-2.6.0%2Bcu124-cp311-cp311-win_amd64.whl" -OutFile .\data\torch-2.6.0+cu124-cp311-cp311-win_amd64.whl
-# pip install .\data\torch-2.6.0+cu124-cp311-cp311-win_amd64.whl
 
 # Configure
 copy .env.example .env
@@ -197,6 +193,24 @@ EMBED_AUTO_DOWNLOAD_ON_MISS=true
 # View logs
 Get-Content .\data\chroma_server_err.log -Tail 50
 ```
+
+---
+
+## Citation
+
+If this project helps your research or workflow, please cite and acknowledge DAFoam:
+
+- DAFoam website: https://dafoam.github.io/
+- DAFoam repository: https://github.com/mdolab/dafoam
+
+For official citation format, follow the guidance on the DAFoam project pages.
+
+---
+
+## License
+
+This repository is licensed under **GNU GPL v3.0**.  
+See `LICENSE` for details.
 
 ---
 

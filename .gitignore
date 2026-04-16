@@ -3,7 +3,12 @@
 __pycache__/
 *.py[cod]
 *.egg-info/
-data/
 *.log
 *.pid
 .idea
+data/docs_repo
+data/repo_cache
+data/chroma_server_err.log
+data/chroma_server.log
+data/chroma_server.pid
+data/chroma_server.port
