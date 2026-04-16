@@ -11,7 +11,7 @@
 ### 1. Prerequisites
 
 - **Python 3.11** — required for the CUDA torch wheel (`cp311` only). Do NOT use 3.12/3.14.
-- A local clone of DAFoam at `../dafoam` (or configure `DAFOAM_REPO_PATH`)
+- Network access to clone DAFoam into `data/repo_cache` (or set `DAFOAM_REPO_PATH` for a local override)
 
 ```powershell
 # Install uv (fast Python version manager) if not already installed
@@ -133,7 +133,7 @@ Chroma × 4   (persistent, on-disk)
 
 ```powershell
 # Source code (Python + C++)
-python scripts\index_code.py                   # default: ../dafoam main branch
+python scripts\index_code.py                   # default: cached clone (mdolab/dafoam main)
 python scripts\index_code.py --repo C:\path\to\dafoam  # custom path
 python scripts\index_code.py --rebuild         # wipe and re-index
 python scripts\index_code.py --cpu             # force CPU
@@ -218,8 +218,6 @@ dafoam-rag/
 │   ├── index_docs.py            ← Index DAFoam docs (RST/MD or web scrape)
 │   ├── index_tests.py           ← Index test cases + OF configs
 │   ├── index_tutorials.py       ← Index ecosystem tutorial/prerequisite repos
-│   ├── benchmark_embeddings.py  ← Retrieval smoke benchmark against live collections
-│   ├── bakeoff_local_embeddings.py ← Local model quality comparison script
 │   ├── test_e2e.py              ← Smoke test
 │   └── Start-ChromaServer.ps1  ← Start/stop/status
 ├── data/                        ← Chroma DBs + server logs (gitignored)

@@ -24,7 +24,6 @@ log = logging.getLogger(__name__)
 PROJECT_ROOT = Path(__file__).parent.parent.resolve()
 
 REPO_CONFIG_PATH = PROJECT_ROOT / "config" / "repository_sources.json"
-REPO_CACHE_DIR = PROJECT_ROOT / "data" / "repo_cache"
 ALLOWED_EXTENSIONS = frozenset(
     [
         ".py",
@@ -55,11 +54,16 @@ def load_repo_sources() -> list[dict]:
     return data.get("sources", [])
 
 
+def resolve_repo_cache_dir() -> Path:
+    cache_cfg = Path(settings.repo_cache_dir)
+    return cache_cfg if cache_cfg.is_absolute() else (PROJECT_ROOT / cache_cfg).resolve()
+
+
 def sync_repo(repo_entry: dict) -> Path:
     repo_name = repo_entry["name"]
     url = repo_entry["url"]
     branch = repo_entry.get("branch", "main")
-    repo_dir = REPO_CACHE_DIR / repo_name.replace("/", "__")
+    repo_dir = resolve_repo_cache_dir() / repo_name.replace("/", "__")
 
     if repo_dir.exists():
         try:

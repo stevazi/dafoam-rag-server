@@ -9,7 +9,7 @@ Test scripts are goldmines for "how do I configure solver X?" queries —
 they contain the exact DAOPTION dictionaries used for each solver type.
 
 Usage:
-    python scripts/index_tests.py                  # use DAFOAM_REPO_PATH from .env
+    python scripts/index_tests.py                  # use cached clone from REPO_CACHE_DIR
     python scripts/index_tests.py --repo ../dafoam
     python scripts/index_tests.py --rebuild
     python scripts/index_tests.py --cpu
@@ -43,6 +43,46 @@ OF_CASE_DIRS = {"constant", "system", "0"}
 
 # OpenFOAM config files have no extension or specific ones
 OF_EXTENSIONS = frozenset(["", ".cfg", ".foam", ".txt"])
+
+
+def resolve_cache_repo_path() -> Path:
+    cache_cfg = Path(settings.repo_cache_dir)
+    cache_root = cache_cfg if cache_cfg.is_absolute() else (PROJECT_ROOT / cache_cfg).resolve()
+    return cache_root / "mdolab__dafoam"
+
+
+def sync_cached_repo() -> Path:
+    repo_dir = resolve_cache_repo_path()
+    repo_dir.parent.mkdir(parents=True, exist_ok=True)
+
+    if repo_dir.exists():
+        repo = Repo(repo_dir)
+        repo.remotes.origin.fetch()
+        target = settings.dafoam_repo_branch
+        if f"origin/{target}" in [ref.name for ref in repo.refs]:
+            repo.git.checkout(target)
+            repo.git.pull("origin", target)
+        else:
+            repo.remotes.origin.pull()
+        log.info("Updated cached DAFoam repo: %s", repo_dir)
+        return repo_dir
+
+    Repo.clone_from(
+        settings.dafoam_repo_url,
+        repo_dir,
+        branch=settings.dafoam_repo_branch,
+        depth=1,
+    )
+    log.info("Cloned DAFoam repo to cache: %s", repo_dir)
+    return repo_dir
+
+
+def resolve_repo_path(repo_override: str | None) -> Path:
+    if repo_override:
+        return Path(repo_override).expanduser().resolve()
+    if settings.dafoam_repo_path.strip():
+        return Path(settings.dafoam_repo_path).expanduser().resolve()
+    return sync_cached_repo()
 
 
 def resolve_branch(repo: Repo) -> str:
@@ -127,12 +167,12 @@ def load_test_documents(repo_path: Path) -> list[Document]:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Index DAFoam test cases into Chroma")
-    parser.add_argument("--repo", default=None, help="Path to DAFoam repo (overrides .env)")
+    parser.add_argument("--repo", default=None, help="Path to DAFoam repo (overrides cache and .env)")
     parser.add_argument("--rebuild", action="store_true", help="Wipe and re-index")
     parser.add_argument("--cpu", action="store_true", help="Force CPU embeddings")
     args = parser.parse_args()
 
-    repo_path = Path(args.repo or settings.dafoam_repo_path).expanduser().resolve()
+    repo_path = resolve_repo_path(args.repo)
     if not repo_path.exists():
         log.error("Repo path does not exist: %s", repo_path)
         sys.exit(1)

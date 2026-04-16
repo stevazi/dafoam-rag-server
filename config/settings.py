@@ -6,14 +6,17 @@ from pydantic import Field
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 
-    # DAFoam source repository to index
-    dafoam_repo_path: str = "../dafoam"
+    # DAFoam source repository settings
+    dafoam_repo_url: str = "https://github.com/mdolab/dafoam.git"
+    dafoam_repo_branch: str = "main"
+    dafoam_repo_path: str = ""  # optional local override; if empty, use cached clone
 
     # Chroma DB directories
     chroma_code_dir: str = "./data/chroma_code"
     chroma_docs_dir: str = "./data/chroma_docs"
     chroma_tests_dir: str = "./data/chroma_tests"
     chroma_tutorials_dir: str = "./data/chroma_tutorials"
+    repo_cache_dir: str = "./data/repo_cache"
 
     # Chroma collection names
     chroma_collection_code: str = "dafoam_code"
