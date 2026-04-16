@@ -14,21 +14,16 @@
 - Network access to clone DAFoam into `data/repo_cache` (or set `DAFOAM_REPO_PATH` for a local override)
 
 ```powershell
-# Install uv (fast Python version manager) if not already installed
+# Install uv (if not already installed)
 irm https://astral.sh/uv/install.ps1 | iex
 uv python install 3.11
 
-# Create venv with Python 3.11
-$py = "$env:APPDATA\uv\python\cpython-3.11.14-windows-x86_64-none\python.exe"
-& $py -m venv .venv
-.venv\Scripts\Activate.ps1
+# Create project venv and sync dependencies from pyproject.toml/uv.lock
+uv venv --python 3.11
+uv sync --native-tls
 
-# Install core dependencies
-pip install -r requirements.txt
-
-# Install GPU-accelerated PyTorch (CUDA 12.4)
-# If pip can reach download.pytorch.org directly:
-pip install -r requirements-cuda.txt
+# Optional: install CUDA extra (torch cu124)
+uv sync --extra cuda --native-tls
 
 # Configure
 copy .env.example .env
@@ -38,22 +33,35 @@ copy .env.example .env
 
 ```powershell
 # Index DAFoam Python + C++ source
-python scripts\index_code.py
+uv run python scripts\index_code.py
 
 # Index documentation (clones DAFoam/DAFoam.github.io Sphinx source)
-python scripts\index_docs.py
+uv run python scripts\index_docs.py
 
 # Index test cases + OpenFOAM case configs
-python scripts\index_tests.py
+uv run python scripts\index_tests.py
 
 # Index tutorials + prerequisite ecosystem repositories (priority 1 by default)
-python scripts\index_tutorials.py --max-priority 1
+uv run python scripts\index_tutorials.py --max-priority 1
 ```
 
 ### 3. Start the MCP server
 
 ```powershell
+# Fast one-shot launcher (builds/executes from this repo)
+uvx --native-tls --from . dafoam-rag-server
+
+# GPU/CUDA variant
+uvx --native-tls --from ".[cuda]" dafoam-rag-server
+
+# Existing managed launcher script (start/stop/status + logs)
 .\scripts\Start-ChromaServer.ps1
+```
+
+Start directly from the public Git + LFS repository with `uvx` source fetching:
+
+```powershell
+uvx --native-tls --lfs --from git+https://github.com/stevazi/dafoam-rag-server.git dafoam-rag-server
 ```
 
 Output:
@@ -83,7 +91,7 @@ See `config/mcp-config-entry.json` for the snippet.
 
 ```powershell
 .\scripts\Start-ChromaServer.ps1 -Status
-python scripts\test_e2e.py
+uv run python scripts\test_e2e.py
 ```
 
 ---
@@ -129,24 +137,24 @@ Chroma × 4   (persistent, on-disk)
 
 ```powershell
 # Source code (Python + C++)
-python scripts\index_code.py                   # default: cached clone (mdolab/dafoam main)
-python scripts\index_code.py --repo C:\path\to\dafoam  # custom path
-python scripts\index_code.py --rebuild         # wipe and re-index
-python scripts\index_code.py --cpu             # force CPU
+uv run python scripts\index_code.py                   # default: cached clone (mdolab/dafoam main)
+uv run python scripts\index_code.py --repo C:\path\to\dafoam  # custom path
+uv run python scripts\index_code.py --rebuild         # wipe and re-index
+uv run python scripts\index_code.py --cpu             # force CPU
 
 # Documentation
-python scripts\index_docs.py                   # clone DAFoam/DAFoam.github.io + index RST/MD
-python scripts\index_docs.py --source scrape   # scrape dafoam.github.io HTML instead
-python scripts\index_docs.py --rebuild
+uv run python scripts\index_docs.py                   # clone DAFoam/DAFoam.github.io + index RST/MD
+uv run python scripts\index_docs.py --source scrape   # scrape dafoam.github.io HTML instead
+uv run python scripts\index_docs.py --rebuild
 
 # Test cases + OpenFOAM configs
-python scripts\index_tests.py
-python scripts\index_tests.py --rebuild
+uv run python scripts\index_tests.py
+uv run python scripts\index_tests.py --rebuild
 
 # Ecosystem tutorials and prerequisite repositories
-python scripts\index_tutorials.py --max-priority 1
-python scripts\index_tutorials.py --max-priority 3 --include-prerequisites
-python scripts\index_tutorials.py --rebuild
+uv run python scripts\index_tutorials.py --max-priority 1
+uv run python scripts\index_tutorials.py --max-priority 3 --include-prerequisites
+uv run python scripts\index_tutorials.py --rebuild
 ```
 
 ### Docs repo
@@ -236,6 +244,8 @@ dafoam-rag/
 │   └── Start-ChromaServer.ps1  ← Start/stop/status
 ├── data/                        ← Chroma DBs + server logs (gitignored)
 ├── .env.example
+├── pyproject.toml
+├── uv.lock
 ├── requirements.txt
 └── requirements-cuda.txt
 ```
