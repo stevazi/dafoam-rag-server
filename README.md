@@ -64,6 +64,16 @@ Start directly from the public Git + LFS repository with `uvx` source fetching:
 uvx --native-tls --lfs --from git+https://github.com/stevazi/dafoam-rag-server.git dafoam-rag-server
 ```
 
+If you keep indexes in a custom location, set explicit paths before launch:
+
+```powershell
+$env:CHROMA_CODE_DIR = "D:\dafoam-rag\data\chroma_code"
+$env:CHROMA_DOCS_DIR = "D:\dafoam-rag\data\chroma_docs"
+$env:CHROMA_TESTS_DIR = "D:\dafoam-rag\data\chroma_tests"
+$env:CHROMA_TUTORIALS_DIR = "D:\dafoam-rag\data\chroma_tutorials"
+uvx --native-tls --lfs --from git+https://github.com/stevazi/dafoam-rag-server.git dafoam-rag-server
+```
+
 Output:
 ```
 dafoam-rag SSE server started (PID 12345).

@@ -29,6 +29,7 @@ import logging
 import os
 import sys
 from pathlib import Path
+from typing import Iterable
 
 os.environ.setdefault("HF_HUB_DISABLE_SYMLINKS_WARNING", "1")
 os.environ.setdefault("HF_HUB_OFFLINE", "0")
@@ -63,6 +64,55 @@ _tests_collection: chromadb.Collection | None = None
 _tutorials_collection: chromadb.Collection | None = None
 
 
+def _iter_candidate_db_paths(dir_cfg: str) -> Iterable[Path]:
+    cfg_path = Path(dir_cfg)
+    if cfg_path.is_absolute():
+        yield cfg_path
+        return
+
+    rel_path = Path(dir_cfg)
+    launch_script = Path(sys.argv[0]).resolve() if sys.argv else None
+    roots = [
+        _PROJECT_ROOT,
+        Path.cwd(),
+        launch_script.parent.parent if launch_script and len(launch_script.parents) >= 2 else None,
+    ]
+
+    seen: set[str] = set()
+    for root in roots:
+        if root is None:
+            continue
+        candidate = (root / rel_path).resolve()
+        key = str(candidate).lower()
+        if key not in seen:
+            seen.add(key)
+            yield candidate
+
+    # uvx --from git+... installs under uv cache; discover LFS-provided data there.
+    uv_archive_root = Path.home() / "AppData" / "Local" / "uv" / "cache" / "archive-v0"
+    if uv_archive_root.exists():
+        rel_suffix = rel_path.as_posix().strip("./").replace("/", "\\")
+        for archive_dir in uv_archive_root.iterdir():
+            if not archive_dir.is_dir():
+                continue
+            candidate = (archive_dir / rel_suffix).resolve()
+            key = str(candidate).lower()
+            if key not in seen:
+                seen.add(key)
+                yield candidate
+
+
+def _resolve_db_path(dir_cfg: str) -> Path:
+    for candidate in _iter_candidate_db_paths(dir_cfg):
+        if (candidate / "chroma.sqlite3").exists():
+            return candidate
+    # keep previous behavior as final fallback
+    cfg_path = Path(dir_cfg)
+    if cfg_path.is_absolute():
+        return cfg_path
+    return (_PROJECT_ROOT / cfg_path).resolve()
+
+
 def startup() -> None:
     global _embed_model, _code_collection, _docs_collection, _tests_collection, _tutorials_collection
 
@@ -76,13 +126,12 @@ def startup() -> None:
         ("_tests_collection", settings.chroma_tests_dir, settings.chroma_collection_tests),
         ("_tutorials_collection", settings.chroma_tutorials_dir, settings.chroma_collection_tutorials),
     ]:
-        cfg_path = Path(dir_cfg)
-        db_path = str(cfg_path if cfg_path.is_absolute() else (_PROJECT_ROOT / cfg_path).resolve())
+        db_path = str(_resolve_db_path(dir_cfg))
         try:
             client = chromadb.PersistentClient(path=db_path)
             col = client.get_collection(col_cfg)
             globals()[attr] = col
-            log.info("Collection '%s': %d chunks", col_cfg, col.count())
+            log.info("Collection '%s': %d chunks (path: %s)", col_cfg, col.count(), db_path)
         except Exception as exc:
             log.warning("Collection '%s' unavailable: %s — run the matching index script.", col_cfg, exc)
 
