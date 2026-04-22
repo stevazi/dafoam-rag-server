@@ -126,7 +126,18 @@ def startup() -> None:
         ("_tests_collection", settings.chroma_tests_dir, settings.chroma_collection_tests),
         ("_tutorials_collection", settings.chroma_tutorials_dir, settings.chroma_collection_tutorials),
     ]:
-        db_path = str(_resolve_db_path(dir_cfg))
+        candidates = [str(p) for p in _iter_candidate_db_paths(dir_cfg)]
+        db_dir = _resolve_db_path(dir_cfg)
+        db_sqlite = db_dir / "chroma.sqlite3"
+        if not db_sqlite.exists():
+            log.warning(
+                "Collection '%s' unavailable: no Chroma DB found. Checked: %s",
+                col_cfg,
+                ", ".join(candidates),
+            )
+            continue
+
+        db_path = str(db_dir)
         try:
             client = chromadb.PersistentClient(path=db_path)
             col = client.get_collection(col_cfg)
